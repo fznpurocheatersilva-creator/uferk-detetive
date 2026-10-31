@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uferkzada OSINT | Painel de Investigação</title>
+    <style>
+        :root {
+            --bg-base: #0f111a;
+            --bg-panel: #1a1d27;
+            --bg-card: #252936;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --accent-primary: #3b82f6;
+            --accent-danger: #ef4444;
+            --accent-success: #10b981;
+            --accent-warning: #f59e0b;
+            --border-color: #334155;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            min-height: 100vh;
+        }
+
+        /* --- SIDEBAR: NAVEGAÇÃO DE MÓDULOS --- */
+        .sidebar {
+            background: var(--bg-panel);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+
+        .brand {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .brand h2 { color: var(--accent-primary); font-size: 20px; }
+        .brand p { font-size: 12px; color: var(--text-muted); }
+
+        .search-module {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .search-module:hover, .search-module.active {
+            border-color: var(--accent-primary);
+            background: #2a3042;
+        }
+        .module-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+        .module-desc { font-size: 11px; color: var(--text-muted); }
+        .badge {
+            display: inline-block;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: var(--accent-primary);
+            color: white;
+            margin-left: 5px;
+        }
+        .badge.new { background: var(--accent-success); }
+        .badge.flagship { background: var(--accent-warning); }
+
+        /* --- MAIN CONTENT --- */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Barra de Busca Superior */
+        .search-bar-container {
+            background: var(--bg-panel);
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            gap: 10px;
+        }
+        .search-input {
+            flex: 1;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        .search-input:focus { outline: none; border-color: var(--accent-primary); }
+        .btn-investigate {
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            padding: 0 30px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.2s;
+        }
+        .btn-investigate:hover { background: #2563eb; }
+
+        /* Header de Busca */
+        .investigation-header {
+            background: var(--bg-panel);
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .subject-summary { display: flex; align-items: center; gap: 15px; }
+        .subject-avatar {
+            width: 60px; height: 60px; border-radius: 50%;
+            background: var(--bg-card); border: 2px solid var(--accent-primary);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; font-weight: bold;
+        }
+        .subject-info h1 { font-size: 20px; margin-bottom: 4px; }
+        .subject-meta { font-size: 12px; color: var(--text-muted); }
+        .risk-score { text-align: right; }
+        .risk-value { font-size: 24px; font-weight: bold; color: var(--accent-danger); }
+        .risk-label { font-size: 11px; text-transform: uppercase; color: var(--text-muted); }
+
+        /* Grid de Cards de Inteligência */
+        .intel-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .intel-card {
+            background: var(--bg-panel);
+            border-radius: 12px;
+            padding: 15px;
+            border: 1px solid var(--border-color);
+        }
+        .card-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;
+        }
+        .card-title { font-size: 14px; font-weight: 600; color: var(--accent-primary); }
+        .card-status { font-size: 11px; padding: 2px 8px; border-radius: 12px; background: rgba(255,255,255,0.1); }
+        .status-danger { background: rgba(239, 68, 68, 0.2); color: var(--accent-danger); }
+        .status-success { background: rgba(16, 185, 129, 0.2); color: var(--accent-success); }
+
+        .data-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; }
+        .data-label { color: var(--text-muted); }
+        .data-value { font-weight: 500; text-align: right; }
+        
+        .alert-box {
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 4px solid var(--accent-danger);
+            padding: 10px; margin-top: 10px; font-size: 12px; border-radius: 4px;
+        }
+
+        .list-item {
+            display: flex; justify-content: space-between; padding: 10px;
+            border-bottom: 1px solid var(--border-color); font-size: 13px;
+        }
+        .list-item:last-child { border-bottom: none; }
+        .list-item-title { font-weight: 500; }
+        .list-item-sub { font-size: 11px; color: var(--text-muted); }
+        .list-item-value { font-weight: bold; color: var(--accent-warning); }
+
+        .placeholder {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 50px;
+            color: var(--text-muted);
+            border: 1px dashed var(--border-color);
+            border-radius: 12px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- SIDEBAR: MÓDULOS DE INVESTIGAÇÃO -->
+    <aside class="sidebar">
+        <div class="brand">
+            <h2>🕵️ UFERKZADA OSINT</h2>
+            <p>Módulos de Inteligência</p>
+        </div>
+
+        <div class="search-module active">
+            <div class="module-title">Investigador PRO <span class="badge flagship">FLAGSHIP</span></div>
+            <div class="module-desc">Busca completa OSINT + Agregação</div>
+        </div>
+        <div class="search-module">
+            <div class="module-title">Super OSINT <span class="badge new">NOVO</span></div>
+            <div class="module-desc">CPF, Email, User em dezenas de sites</div>
+        </div>
+        <div class="search-module">
+            <div class="module-title">Telefone 2.0</div>
+            <div class="module-desc">Dados telefônicos avançados</div>
+        </div>
+        <div class="search-module">
+            <div class="module-title">Busca Processos</div>
+            <div class="module-desc">Processos judiciais nacionais</div>
+        </div>
+        <div class="search-module">
+            <div class="module-title">Placa + CRV</div>
+            <div class="module-desc">Código de segurança e histórico</div>
+        </div>
+        <div class="search-module">
+            <div class="module-title">Investiga BACEN</div>
+            <div class="module-desc">Score de risco e crédito</div>
+        </div>
+        <div class="search-module">
+            <div class="module-title">Reconhecimento Facial</div>
+            <div class="module-desc">Busca por foto</div>
+        </div>
+    </aside>
+
+    <!-- MAIN: PAINEL DO ALVO -->
+    <main class="main-content">
+        
+        <!-- Barra de Busca -->
+        <div class="search-bar-container">
+            <input type="text" id="searchInput" class="search-input" placeholder="Digite CPF, Telefone, Placa ou Nome... (Ex: 123.456.789-00)">
+            <button class="btn-investigate" onclick="runInvestigation()">INVESTIGAR</button>
+        </div>
+
+        <!-- Header do Alvo (Invisível até a busca) -->
+        <header id="targetHeader" class="investigation-header" style="display: none;">
+            <div class="subject-summary">
+                <div class="subject-avatar" id="targetAvatar">??</div>
+                <div class="subject-info">
+                    <h1 id="targetName">ALVO</h1>
+                    <div class="subject-meta" id
